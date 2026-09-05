@@ -1,0 +1,16 @@
+{
+  "name": "djibabouya-tv-cloudflare",
+  "version": "2.0.0",
+  "private": true,
+  "description": "DJIBABOUYA TV — Cloudflare Workers + D1 (sans R2)",
+  "scripts": {
+    "dev": "wrangler dev",
+    "deploy": "wrangler deploy",
+    "db:init": "wrangler d1 execute djibabouya-tv-db --remote --file=./schema.sql",
+    "check": "node scripts/check-deploy.mjs",
+    "deploy:check": "npm run check"
+  },
+  "devDependencies": {
+    "wrangler": "^4.38.0"
+  }
+}

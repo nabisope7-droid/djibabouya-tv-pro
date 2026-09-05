@@ -1,0 +1,21 @@
+{
+  "$schema": "./node_modules/wrangler/config-schema.json",
+  "name": "djibabouya-tv",
+  "main": "worker.js",
+  "compatibility_date": "2026-09-05",
+  "assets": {
+    "directory": "./public",
+    "binding": "ASSETS",
+    "run_worker_first": [
+      "/api/*",
+      "/media/*"
+    ]
+  },
+  "d1_databases": [
+    {
+      "binding": "DB",
+      "database_name": "djibabouya-tv-db",
+      "database_id": "adf3c610-d3f7-45c5-a1e5-42cbdd46f640" // ID réel de la base D1
+    }
+  ]
+}
