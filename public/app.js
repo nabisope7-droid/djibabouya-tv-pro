@@ -780,44 +780,56 @@ replayOverlay.hidden = !replayActive;
 
 if (replayActive && state.replayVideo) {
   const publicationId = String(state.replayPublicationId || '');
-
-  // Recharge le replay lorsqu'une nouvelle publication arrive.
-  if (
+  const newReplay =
     replayVideoView.dataset.publicationId !== publicationId ||
-    replayVideoView.src !== state.replayVideo
-  ) {
-    replayVideoView.dataset.publicationId = publicationId;
-    replayVideoView.src = state.replayVideo;
-    replayVideoView.load();
-  }
+    replayVideoView.src !== state.replayVideo;
 
   replayVideoView.muted = true;
   replayVideoView.playsInline = true;
+  replayVideoView.autoplay = true;
+  replayVideoView.preload = 'auto';
   replayVideoView.playbackRate =
     Math.max(.25, Math.min(1, Number(state.replaySpeed) || .5));
 
   const start = Math.max(0, Number(state.replayClipStart) || 0);
   const end = Math.max(start + .1, Number(state.replayClipEnd) || 0);
 
-  if (
-    Math.abs(replayVideoView.currentTime - start) > 1 &&
-    replayVideoView.readyState >= 1
+  if (newReplay) {
+    replayVideoView.dataset.publicationId = publicationId;
+    replayVideoView.dataset.replayStart = String(start);
+    replayVideoView.dataset.replayEnd = String(end);
+
+    replayVideoView.src = state.replayVideo;
+
+    replayVideoView.onloadedmetadata = async () => {
+      replayVideoView.currentTime = start;
+      try {
+        await replayVideoView.play();
+      } catch (_) {}
+    };
+
+    replayVideoView.ontimeupdate = () => {
+      const s = Number(replayVideoView.dataset.replayStart) || 0;
+      const e = Number(replayVideoView.dataset.replayEnd) || s + .1;
+
+      if (replayVideoView.currentTime >= e) {
+        replayVideoView.currentTime = s;
+      }
+    };
+
+    replayVideoView.load();
+  } else if (
+    replayVideoView.readyState >= 1 &&
+    Math.abs(replayVideoView.currentTime - start) > 1
   ) {
     replayVideoView.currentTime = start;
   }
-
-  const playPromise = replayVideoView.play();
-  if (playPromise) {
-    playPromise.catch(() => {});
-  }
-
-  replayVideoView.ontimeupdate = () => {
-    if (replayVideoView.currentTime >= end) {
-      replayVideoView.currentTime = start;
-    }
-  };
 } else if (replayVideoView) {
   replayVideoView.pause();
+  replayVideoView.onloadedmetadata = null;
+  replayVideoView.ontimeupdate = null;
+  replayVideoView.dataset.publicationId = '';
+}
 }
   const subActive = activeFor(state.subStartedAt, state.subDuration);
   subOverlay.hidden = !subActive;
@@ -974,8 +986,9 @@ publishReplay.addEventListener('click', async () => {
     state.replayVideo = data; state.replayClipStart = start; state.replayClipEnd = end;
     state.replaySpeed = Math.max(.25, Math.min(1, Number(replaySpeed.value) || .5));
     state.replayDuration = Math.max(1, Math.ceil((end - start) / state.replaySpeed));
-    state.replayStartedAt = Date.now(); state.replayPublicationId = crypto.randomUUID ? crypto.randomUUID() : String(Date.now());
+    state.replayPublicationId = crypto.randomUUID ? crypto.randomUUID() : String(Date.now());
     await uploadStateMedia(['replayVideo']);
+    state.replayStartedAt = Date.now();
     await saveAndSync(); render();
     setPublishStatus(replayStatus, '✓ Replay validé et publié avec succès sur l’écran des spectateurs.');
   } catch (err) { console.error(err); setPublishStatus(replayStatus, '✕ Publication impossible : ' + err.message, false); }
