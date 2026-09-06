@@ -760,89 +760,251 @@ function activeReplay() { return activeFor(state.replayStartedAt, state.replayDu
 
 function renderBroadcastOverlays() {
   clearExpiredBroadcasts();
+
+  // =========================
+  // PUBLICITÉ
+  // =========================
   const adActive = activeFor(state.adStartedAt, state.adDuration);
+
   adOverlay.hidden = !adActive;
+
   if (adActive) {
     const hasVideo = Boolean(state.adVideo);
     const hasImage = Boolean(state.adImage) && !hasVideo;
+
     adImageView.hidden = !hasImage;
-    if (hasImage) adImageView.src = state.adImage;
+
+    if (hasImage) {
+      adImageView.src = state.adImage;
+    }
+
     adVideoView.hidden = !hasVideo;
-    if (hasVideo && adVideoView.src !== state.adVideo) { adVideoView.src = state.adVideo; adVideoView.load(); }
-    if (hasVideo) { const p = adVideoView.play(); if (p) p.catch(() => {}); }
+
+    if (hasVideo && adVideoView.src !== state.adVideo) {
+      adVideoView.src = state.adVideo;
+      adVideoView.load();
+    }
+
+    if (hasVideo) {
+      const p = adVideoView.play();
+      if (p) p.catch(() => {});
+    }
+
     adTitleView.textContent = state.adTitle || '';
     adTextView.textContent = state.adText || '';
-    adOverlay.style.setProperty('--ad-text', state.adTextColor || '#ffffff');
-    adOverlay.style.setProperty('--ad-bg', state.adBgColor || '#1a1a1a');
-  } else if (adVideoView) { adVideoView.pause(); }
-  const replayActive = activeReplay();
-replayOverlay.hidden = !replayActive;
 
-if (replayActive && state.replayVideo) {
-  const publicationId = String(state.replayPublicationId || '');
-  const newReplay =
-    replayVideoView.dataset.publicationId !== publicationId;
+    adOverlay.style.setProperty(
+      '--ad-text',
+      state.adTextColor || '#ffffff'
+    );
 
-  replayVideoView.muted = true;
-  replayVideoView.playsInline = true;
-  replayVideoView.autoplay = true;
-  replayVideoView.preload = 'auto';
-  replayVideoView.playbackRate =
-    Math.max(.25, Math.min(1, Number(state.replaySpeed) || .5));
+    adOverlay.style.setProperty(
+      '--ad-bg',
+      state.adBgColor || '#1a1a1a'
+    );
 
-  const start = Math.max(0, Number(state.replayClipStart) || 0);
-  const end = Math.max(start + .1, Number(state.replayClipEnd) || 0);
-
-  if (newReplay) {
-    replayVideoView.dataset.publicationId = publicationId;
-    replayVideoView.dataset.replayStart = String(start);
-    replayVideoView.dataset.replayEnd = String(end);
-
-    replayVideoView.src = state.replayVideo;
-
-    replayVideoView.onloadedmetadata = async () => {
-      replayVideoView.currentTime = start;
-      try {
-        await replayVideoView.play();
-      } catch (_) {}
-    };
-
-    replayVideoView.ontimeupdate = () => {
-      const s = Number(replayVideoView.dataset.replayStart) || 0;
-      const e = Number(replayVideoView.dataset.replayEnd) || s + .1;
-
-      if (replayVideoView.currentTime >= e) {
-        replayVideoView.currentTime = s;
-      }
-    };
-
-    replayVideoView.load();
-  } else if (
-    replayVideoView.readyState >= 1 &&
-    Math.abs(replayVideoView.currentTime - start) > 1
-  ) {
-    replayVideoView.currentTime = start;
+  } else if (adVideoView) {
+    adVideoView.pause();
   }
-} else if (replayVideoView) {
-  replayVideoView.pause();
-  replayVideoView.onloadedmetadata = null;
-  replayVideoView.ontimeupdate = null;
-  replayVideoView.dataset.publicationId = '';
-}
 
-  const subActive = activeFor(state.subStartedAt, state.subDuration);
+
+  // =========================
+  // REPLAY
+  // =========================
+  const replayActive = activeReplay();
+
+  replayOverlay.hidden = !replayActive;
+
+  if (replayActive && state.replayVideo) {
+
+    const publicationId = String(
+      state.replayPublicationId || state.replayStartedAt || ''
+    );
+
+    const currentPublicationId =
+      replayVideoView.dataset.publicationId || '';
+
+    const newReplay =
+      currentPublicationId !== publicationId;
+
+    replayVideoView.muted = true;
+    replayVideoView.playsInline = true;
+    replayVideoView.autoplay = true;
+    replayVideoView.preload = 'auto';
+
+    replayVideoView.playbackRate =
+      Math.max(
+        0.25,
+        Math.min(1, Number(state.replaySpeed) || 0.5)
+      );
+
+    const start =
+      Math.max(
+        0,
+        Number(state.replayClipStart) || 0
+      );
+
+    const end =
+      Math.max(
+        start + 0.1,
+        Number(state.replayClipEnd) || start + 0.1
+      );
+
+
+    // =========================
+    // NOUVEAU REPLAY
+    // =========================
+    if (newReplay) {
+
+      replayVideoView.pause();
+
+      replayVideoView.dataset.publicationId =
+        publicationId;
+
+      replayVideoView.dataset.replayStart =
+        String(start);
+
+      replayVideoView.dataset.replayEnd =
+        String(end);
+
+      replayVideoView.src = state.replayVideo;
+
+      replayVideoView.onloadedmetadata = async () => {
+
+        try {
+          replayVideoView.currentTime = start;
+        } catch (_) {}
+
+        try {
+          await replayVideoView.play();
+        } catch (_) {}
+      };
+
+
+      replayVideoView.ontimeupdate = () => {
+
+        const s =
+          Number(
+            replayVideoView.dataset.replayStart
+          ) || 0;
+
+        const e =
+          Number(
+            replayVideoView.dataset.replayEnd
+          ) || (s + 0.1);
+
+        if (
+          replayVideoView.currentTime >= e
+        ) {
+          try {
+            replayVideoView.currentTime = s;
+          } catch (_) {}
+        }
+      };
+
+
+      replayVideoView.load();
+
+    } else {
+
+      // =========================
+      // REPLAY DÉJÀ CHARGÉ
+      // =========================
+      replayVideoView.dataset.replayStart =
+        String(start);
+
+      replayVideoView.dataset.replayEnd =
+        String(end);
+
+      replayVideoView.playbackRate =
+        Math.max(
+          0.25,
+          Math.min(
+            1,
+            Number(state.replaySpeed) || 0.5
+          )
+        );
+
+      if (replayVideoView.readyState >= 1) {
+
+        if (
+          replayVideoView.currentTime < start ||
+          replayVideoView.currentTime >= end
+        ) {
+          try {
+            replayVideoView.currentTime = start;
+          } catch (_) {}
+        }
+
+        const p = replayVideoView.play();
+
+        if (p) p.catch(() => {});
+      }
+    }
+
+  } else if (replayVideoView) {
+
+    // =========================
+    // PAS DE REPLAY
+    // =========================
+    replayVideoView.pause();
+
+    replayVideoView.onloadedmetadata = null;
+    replayVideoView.ontimeupdate = null;
+
+    replayVideoView.dataset.publicationId = '';
+    replayVideoView.dataset.replayStart = '';
+    replayVideoView.dataset.replayEnd = '';
+  }
+
+
+  // =========================
+  // REMPLACEMENT
+  // =========================
+  const subActive =
+    activeFor(
+      state.subStartedAt,
+      state.subDuration
+    );
+
   subOverlay.hidden = !subActive;
+
   if (subActive) {
-    subOutPhotoView.src = state.subOutPhoto || '';
-    subOutPhotoView.hidden = !state.subOutPhoto;
-    subOutNameView.textContent = state.subOutName || '';
-    subOutNumberView.textContent = state.subOutNumber ? '#' + state.subOutNumber : '';
-    subOutTeamView.textContent = state.subOutTeam || '';
-    subInPhotoView.src = state.subInPhoto || '';
-    subInPhotoView.hidden = !state.subInPhoto;
-    subInNameView.textContent = state.subInName || '';
-    subInNumberView.textContent = state.subInNumber ? '#' + state.subInNumber : '';
-    subInTeamView.textContent = state.subInTeam || '';
+
+    subOutPhotoView.src =
+      state.subOutPhoto || '';
+
+    subOutPhotoView.hidden =
+      !state.subOutPhoto;
+
+    subOutNameView.textContent =
+      state.subOutName || '';
+
+    subOutNumberView.textContent =
+      state.subOutNumber
+        ? '#' + state.subOutNumber
+        : '';
+
+    subOutTeamView.textContent =
+      state.subOutTeam || '';
+
+
+    subInPhotoView.src =
+      state.subInPhoto || '';
+
+    subInPhotoView.hidden =
+      !state.subInPhoto;
+
+    subInNameView.textContent =
+      state.subInName || '';
+
+    subInNumberView.textContent =
+      state.subInNumber
+        ? '#' + state.subInNumber
+        : '';
+
+    subInTeamView.textContent =
+      state.subInTeam || '';
   }
 }
 function readImage(file, max=1200) {
