@@ -617,11 +617,13 @@ if (window.Twitch && el('twitch')) {
     width: '100%', height: '100%', channel: 'navetanelive', layout: 'video', parent: [location.hostname]
   });
 }
-
-loadServerState(true);
-setInterval(() => loadServerState(false), 500);
-setInterval(render, 1000);
+  
 render();
+loadServerState(false);
+
+setInterval(() => {
+  loadServerState(false);
+}, 1500);
 
 
 // Déplacement libre de l'affichage TV par l'administrateur.
