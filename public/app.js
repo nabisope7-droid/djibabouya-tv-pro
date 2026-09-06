@@ -781,8 +781,7 @@ replayOverlay.hidden = !replayActive;
 if (replayActive && state.replayVideo) {
   const publicationId = String(state.replayPublicationId || '');
   const newReplay =
-    replayVideoView.dataset.publicationId !== publicationId ||
-    replayVideoView.src !== state.replayVideo;
+    replayVideoView.dataset.publicationId !== publicationId;
 
   replayVideoView.muted = true;
   replayVideoView.playsInline = true;
