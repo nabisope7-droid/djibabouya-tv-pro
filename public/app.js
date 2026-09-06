@@ -85,6 +85,7 @@ let state = {
   adImage: '',
   adVideo: '',
   adVideoDuration: 0,
+  adVideoMuted: false,
   adPublicationId: '',
   replayVideo: '',
   replayStartedAt: 0,
@@ -407,6 +408,7 @@ function openAdminPanel() {
   adTextColorIn.value = state.adTextColor || '#ffffff';
   adBgColorIn.value = state.adBgColor || '#1a1a1a';
   adDurationIn.value = state.adDuration || 30;
+  adVideoSoundIn.value = state.adVideoMuted ? 'muted' : 'on';
   subOutNameIn.value = state.subOutName || '';
   subOutNumberIn.value = state.subOutNumber || '';
   subOutTeamIn.value = state.subOutTeam || '';
