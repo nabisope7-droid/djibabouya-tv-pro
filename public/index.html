@@ -1,1 +1,340 @@
+<!doctype html>
+<html lang="fr">
+<head>
+  <meta charset="utf-8">
+  <meta name="viewport" content="width=device-width,initial-scale=1,maximum-scale=1,user-scalable=no,viewport-fit=cover">
+  <title>DJIBABOUYA TV</title>
+  <link rel="stylesheet" href="style.css">
+</head>
+<body>
+<main>
+  <header>
+    <h1>DJIBABOUYA TV</h1>
+  </header>
 
+  <section id="live-stage" aria-label="Écran principal de la TV">
+    <section id="live"><div id="twitch"></div></section>
+
+    <!-- Affichage TV : collé à l’écran principal et défile avec lui. -->
+    <section id="score" aria-label="Score du match">
+    <div class="score-top">
+      <span></span>
+      <span id="status">DIRECT</span>
+    </div>
+    <div class="score-line">
+      <b id="home">ÉQUIPE A</b>
+      <div class="score-box"><strong id="scoreHome">0</strong><span class="dash">-</span><strong id="scoreAway">0</strong></div>
+      <b id="away">ÉQUIPE B</b>
+      <span class="clock-box"><span id="clock">00:00</span><span id="extra" hidden></span></span>
+    </div>
+    </section>
+
+    <section id="adOverlay" class="broadcast-overlay" hidden aria-live="polite">
+      <div class="ad-card">
+        <img id="adImageView" alt="Publicité" hidden>
+        <video id="adVideoView" hidden playsinline controls></video>
+        <div class="ad-copy">
+          <h2 id="adTitleView"></h2>
+          <p id="adTextView"></p>
+        </div>
+      </div>
+    </section>
+
+    <section id="subOverlay" class="broadcast-overlay substitution-overlay" hidden aria-live="polite">
+      <div class="sub-card">
+        <div class="sub-player outgoing">
+          <img id="subOutPhotoView" alt="Joueur sortant">
+          <div class="sub-arrow out-arrow">⬅ SORTANT</div>
+          <strong id="subOutNameView"></strong>
+          <span id="subOutNumberView"></span>
+          <small id="subOutTeamView"></small>
+        </div>
+        <div class="sub-player incoming">
+          <img id="subInPhotoView" alt="Joueur entrant">
+          <div class="sub-arrow in-arrow">ENTRANT ➡</div>
+          <strong id="subInNameView"></strong>
+          <span id="subInNumberView"></span>
+          <small id="subInTeamView"></small>
+        </div>
+      </div>
+    </section>
+
+    <section id="replayOverlay" class="broadcast-overlay replay-overlay" hidden aria-live="polite">
+      <div class="replay-card">
+        <div class="replay-label">REPLAY</div>
+        <video id="replayVideoView" playsinline controls></video>
+      </div>
+    </section>
+
+    <section id="goalOverlay" class="goal-overlay" hidden aria-live="polite"><div class="goal-banner"><div id="goalRows" class="goal-rows"></div><div id="goalScoreLine" class="goal-score-line"></div></div></section>
+    <section id="compositionOverlay" class="broadcast-overlay composition-overlay" hidden aria-live="polite"><div class="composition-card"><div id="compositionTitleView" class="composition-title"></div><div id="compositionBoardView" class="composition-board viewer-board"></div></div></section>
+    <section id="posterOverlay" class="broadcast-overlay poster-overlay" hidden aria-live="polite"><img id="posterImageView" alt="Affiche du match publiée"></section>
+  </section>
+  <p id="message"></p>
+
+  <!-- Accès ADMIN centré en bas de la page d'accueil -->
+  <div class="admin-access">
+    <button id="adminBtn" class="bipa-btn">ADMIN</button>
+  </div>
+</main>
+
+<dialog id="login">
+  <form id="loginForm">
+    <h2>Connexion Admin</h2>
+    <input id="password" type="password" placeholder="Mot de passe" autocomplete="current-password">
+    <div class="login-actions">
+      <button type="submit">SE CONNECTER</button>
+      <button id="cancelLogin" type="button" class="cancel-btn">ANNULER</button>
+    </div>
+    <p id="error"></p>
+  </form>
+</dialog>
+
+<dialog id="panel">
+  <div>
+    <button id="close" type="button">FERMER</button>
+    <h2>DJIBABOUYA TV ADMIN</h2>
+
+    <section class="storage-monitor" aria-live="polite">
+      <div class="storage-monitor-head"><strong>💾 SURVEILLANCE DU STOCKAGE</strong><span id="storageStatusLabel">Vérification…</span></div>
+      <div class="storage-bar"><div id="storageBarFill"></div></div>
+      <div class="storage-monitor-values"><span id="storageUsed">—</span><span>/ 500 Mo</span><span id="storagePercent">—</span></div>
+      <p id="storageDetails" class="admin-help">Le stockage des médias enregistrés dans D1 est surveillé automatiquement.</p>
+      <p id="storageWarning" class="storage-warning" hidden></p>
+      <button id="refreshStorage" type="button">ACTUALISER LE STOCKAGE</button>
+    </section>
+
+    <section class="match-poster-launch">
+      <button id="openPosterBuilder" class="poster-main-btn" type="button">🎨 CRÉER UNE AFFICHE DE MATCH</button>
+      <p>Créez une affiche professionnelle avec les équipes, logos, date, heure, stade et photos.</p>
+    </section>
+
+    <label>Affichage TV</label>
+    <div class="button-row">
+      <button id="removeScore" type="button">RETIRER L’AFFICHAGE</button>
+      <button id="showScore" type="button">AFFICHER L’AFFICHAGE</button>
+      <button id="moveScore" type="button">DÉPLACER L’AFFICHAGE</button>
+      <button id="fixScore" type="button">FIXER L’AFFICHAGE SUR L’ÉCRAN PRINCIPAL</button>
+    </div>
+    <label>Dimensions de l’affichage</label>
+    <div class="display-size-panel">
+      <div class="button-row">
+        <button id="scoreSmaller" type="button">RÉDUIRE</button>
+        <button id="scoreLarger" type="button">AGRANDIR</button>
+        <button id="scoreSizeReset" type="button">100%</button>
+      </div>
+
+      <label for="scoreSize">Taille générale</label>
+      <div class="score-control">
+        <input id="scoreSize" type="range" min="50" max="150" step="5" value="100">
+        <span id="scoreSizeValue">100%</span>
+      </div>
+
+      <label for="scoreWidth">Largeur de l’affichage</label>
+      <div class="score-control">
+        <input id="scoreWidth" type="range" min="50" max="150" step="5" value="100">
+        <span id="scoreWidthValue">100%</span>
+      </div>
+
+      <label for="scoreHeight">Hauteur de l’affichage</label>
+      <div class="score-control">
+        <input id="scoreHeight" type="range" min="50" max="150" step="5" value="100">
+        <span id="scoreHeightValue">100%</span>
+      </div>
+    </div>
+
+    <label>Équipe A</label>
+    <input id="homeIn" placeholder="Équipe A">
+    <label>Couleur du nom A</label>
+    <input id="homeColor" type="color" value="#ffffff">
+    <label>Couleur du contour A</label>
+    <input id="homeOutline" type="color" value="#000000">
+    <label>Couleur du fond A</label>
+    <input id="homeBg" type="color" value="#0964e8">
+
+    <label>Équipe B</label>
+    <input id="awayIn" placeholder="Équipe B">
+    <label>Couleur du nom B</label>
+    <input id="awayColor" type="color" value="#ffffff">
+    <label>Couleur du contour B</label>
+    <input id="awayOutline" type="color" value="#000000">
+    <label>Couleur du fond B</label>
+    <input id="awayBg" type="color" value="#f4c400">
+
+    <button id="saveTeams" type="button">METTRE À JOUR</button>
+
+    <div class="button-row">
+      <button id="homePlus" type="button">A +1</button>
+      <button id="homeMinus" type="button">A -1</button>
+      <button id="awayPlus" type="button">B +1</button>
+      <button id="awayMinus" type="button">B -1</button>
+    </div>
+
+    <div class="button-row">
+      <button id="start" type="button">START</button>
+      <button id="stop" type="button">STOP</button>
+      <button id="reset" type="button">RESET</button>
+    </div>
+
+    <label>Temps additionnel à publier (minutes)</label>
+    <input id="extraIn" type="number" min="0" max="99" placeholder="Temps additionnel">
+    <button id="saveExtra" type="button">PUBLIER</button>
+
+    <label>Couleur du score</label>
+    <input id="scoreColor" type="color" value="#111111">
+    <label>Couleur du fond des scores</label>
+    <input id="scoreBg" type="color" value="#ffffff">
+    <label>Couleur du chronomètre</label>
+    <input id="clockColor" type="color" value="#ffffff">
+    <label>Couleur du temps additionnel</label>
+    <input id="extraColor" type="color" value="#ffffff">
+
+    <hr>
+    <h3>PUBLICITÉ</h3>
+    <p class="admin-help">Choisissez une image de la galerie ou créez une publicité écrite. Vérifiez l’aperçu avant publication. Durée : 0 à 3 minutes.</p>
+    <label for="adImageIn">Photo / montage publicitaire</label>
+    <input id="adImageIn" type="file" accept="image/*">
+    <label for="adVideoIn">Vidéo publicitaire (0 à 2 minutes)</label>
+    <input id="adVideoIn" type="file" accept="video/*">
+    <p class="admin-help">Une publication peut être une image, une vidéo ou une publicité écrite. Vérifiez puis publiez : tous les spectateurs recevront la publication automatiquement.</p>
+    <label for="adTitleIn">Titre publicitaire</label>
+    <input id="adTitleIn" maxlength="80" placeholder="Ex. OFFRE SPÉCIALE">
+    <label for="adTextIn">Texte publicitaire</label>
+    <textarea id="adTextIn" maxlength="500" placeholder="Écrivez votre publicité"></textarea>
+    <label for="adTextColorIn">Couleur du texte</label>
+    <input id="adTextColorIn" type="color" value="#ffffff">
+    <label for="adBgColorIn">Couleur du fond</label>
+    <input id="adBgColorIn" type="color" value="#1a1a1a">
+    <label for="adDurationIn">Durée image / texte (secondes : 0 à 180)</label>
+    <input id="adDurationIn" type="number" min="0" max="180" value="30">
+    <p id="publishStatus" class="publish-status" aria-live="polite"></p>
+    <div class="admin-preview-wrap">
+      <strong>Aperçu avant envoi</strong>
+      <div id="adPreview" class="admin-preview">
+        <img id="adPreviewImage" alt="Aperçu publicité" hidden>
+        <div><b id="adPreviewTitle"></b><span id="adPreviewText"></span></div>
+      </div>
+    </div>
+    <div class="button-row">
+      <button id="previewAd" type="button">APERÇU</button>
+      <button id="publishAd" type="button">PUBLIER LA PUBLICITÉ</button>
+      <button id="stopAd" type="button">RETIRER LA PUBLICITÉ</button>
+    </div>
+
+
+    <hr>
+    <h3>REPLAY PROFESSIONNEL</h3>
+    <p class="admin-help">Option 1 : enregistrer 30 secondes depuis l’onglet / écran où DJIBABOUYA TV est affichée. Le navigateur vous demandera de choisir la surface à capturer.</p>
+    <div class="button-row">
+      <button id="record30" type="button">OPTION 1 — ENREGISTRER 30 SECONDES</button>
+      <button id="stopRecord" type="button" disabled>ARRÊTER L’ENREGISTREMENT</button>
+    </div>
+    <video id="recordPreview" class="replay-preview" controls playsinline hidden></video>
+    <p id="recordStatus" class="publish-status" aria-live="polite"></p>
+
+    <p class="admin-help">Option 2 : choisissez la vidéo enregistrée depuis la galerie et ralentissez sa lecture.</p>
+    <input id="replayVideoIn" type="file" accept="video/*">
+    <label for="replaySpeed">Vitesse ralentie</label>
+    <select id="replaySpeed"><option value="0.25">0,25×</option><option value="0.5" selected>0,5×</option><option value="0.75">0,75×</option></select>
+
+    <p class="admin-help">Option 3 : choisissez le début et la fin de l’extrait, puis publiez directement le replay sur l’écran des spectateurs.</p>
+    <label for="replayStart">Début de l’extrait (secondes)</label>
+    <input id="replayStart" type="number" min="0" value="0">
+    <label for="replayEnd">Fin de l’extrait (secondes)</label>
+    <input id="replayEnd" type="number" min="1" value="10">
+    <div class="button-row">
+      <button id="previewReplay" type="button">APERÇU DU REPLAY</button>
+      <button id="publishReplay" type="button">PUBLIER LE REPLAY</button>
+      <button id="stopReplay" type="button">RETIRER LE REPLAY</button>
+    </div>
+    <p id="replayStatus" class="publish-status" aria-live="polite"></p>
+
+    <hr>
+    <h3>PANNEAU DE REMPLACEMENT</h3>
+    <div class="substitution-form">
+      <div>
+        <h4>JOUEUR SORTANT</h4>
+        <input id="subOutPhotoIn" type="file" accept="image/*">
+        <input id="subOutNameIn" placeholder="Nom du sortant">
+        <input id="subOutNumberIn" placeholder="Numéro du sortant">
+        <select id="subOutTeamIn"><option value="home">Équipe A</option><option value="away">Équipe B</option></select>
+      </div>
+      <div>
+        <h4>JOUEUR ENTRANT</h4>
+        <input id="subInPhotoIn" type="file" accept="image/*">
+        <input id="subInNameIn" placeholder="Nom de l’entrant">
+        <input id="subInNumberIn" placeholder="Numéro de l’entrant">
+        <select id="subInTeamIn"><option value="home">Équipe A</option><option value="away">Équipe B</option></select>
+      </div>
+    </div>
+    <label for="subDurationIn">Durée du panneau (secondes : 0 à 30)</label>
+    <input id="subDurationIn" type="number" min="0" max="30" value="20">
+    <div class="admin-preview-wrap">
+      <strong>Aperçu remplacement</strong>
+      <div id="subPreview" class="sub-preview"></div>
+    </div>
+    <div class="button-row">
+      <button id="previewSub" type="button">APERÇU</button>
+      <button id="publishSub" type="button">PUBLIER LA SUBSTITUTION</button>
+      <button id="stopSub" type="button">RETIRER LE PANNEAU</button>
+    </div>
+    <p id="subStatus" class="publish-status" aria-live="polite"></p>
+
+    <hr>
+    <h3>RAPPEL DES BUTS / ÉVÉNEMENTS</h3>
+    <p class="admin-help">Publiez les buteurs et minutes. Le rappel apparaît immédiatement sur l'écran TV de tous les spectateurs.</p>
+    <div class="goal-form">
+      <input id="goalPlayerIn" placeholder="Nom du joueur">
+      <input id="goalMinuteIn" type="number" min="0" max="130" placeholder="Minute (ex. 12)">
+      <select id="goalTeamIn"><option value="home">Équipe A</option><option value="away">Équipe B</option></select>
+      <label class="check-line"><input id="goalBallIn" type="checkbox" checked> Afficher ⚽</label>
+      <label>Couleur du nom du joueur</label><input id="goalPlayerColorIn" type="color" value="#ffffff">
+      <label>Couleur du ballon</label><input id="goalBallColorIn" type="color" value="#ffffff">
+      <label>Couleur du nom / fond de l'équipe</label><input id="goalTeamColorIn" type="color" value="#ffffff">
+      <label>Couleur du fond du rappel</label><input id="goalBgColorIn" type="color" value="#111111">
+      <div class="button-row"><button id="publishGoal" type="button">PUBLIER LE BUT</button><button id="clearGoals" type="button">EFFACER LES RAPPELS</button></div>
+    </div>
+
+    <hr>
+    <h3>COMPOSITION D'ÉQUIPE</h3>
+    <p class="admin-help">Choisissez 4-4-2, 4-3-3, 3-4-3, etc. Entrez les 11 joueurs avec leur photo. La composition sera affichée en lignes verticales sur l'écran des spectateurs.</p>
+    <label for="formationSelect">Système de composition</label>
+    <select id="formationSelect"><option value="4-4-2">4-4-2</option><option value="4-3-3">4-3-3</option><option value="3-4-3">3-4-3</option><option value="3-5-2">3-5-2</option><option value="4-2-3-1">4-2-3-1</option><option value="4-1-4-1">4-1-4-1</option><option value="5-3-2">5-3-2</option><option value="5-4-1">5-4-1</option></select>
+    <label for="compositionTeamIn">Équipe</label><select id="compositionTeamIn"><option value="home">Équipe A</option><option value="away">Équipe B</option></select>
+    <div id="compositionPlayers" class="composition-players"></div>
+    <div class="admin-preview-wrap"><strong>Aperçu composition</strong><div id="compositionPreview" class="composition-board"></div></div>
+    <div class="button-row"><button id="previewComposition" type="button">APERÇU COMPOSITION</button><button id="publishComposition" type="button">PUBLIER LA COMPOSITION</button><button id="stopComposition" type="button">RETIRER LA COMPOSITION</button></div>
+    <p id="compositionStatus" class="publish-status" aria-live="polite"></p>
+
+    <textarea id="messageIn" placeholder="Information pour les spectateurs"></textarea>
+    <button id="saveMessage" type="button">PUBLIER LE MESSAGE</button>
+  </div>
+</dialog>
+
+<dialog id="posterBuilder">
+  <div class="poster-builder">
+    <div class="poster-builder-head">
+      <div><h2>🎨 CRÉATEUR D’AFFICHE DE MATCH</h2><p>Préparez une affiche moderne pour votre match.</p></div>
+      <button id="closePosterBuilder" type="button">FERMER</button>
+    </div>
+    <div class="poster-builder-grid">
+      <div class="poster-form">
+        <label for="posterCompetition">Compétition</label><input id="posterCompetition" maxlength="60" placeholder="CHAMPIONNAT / TOURNOI">
+        <div class="poster-two"><div><label for="posterHome">Équipe 1</label><input id="posterHome" maxlength="35" placeholder="ÉQUIPE A"></div><div><label for="posterAway">Équipe 2</label><input id="posterAway" maxlength="35" placeholder="ÉQUIPE B"></div></div>
+        <div class="poster-two"><div><label for="posterDate">Date</label><input id="posterDate" type="date"></div><div><label for="posterTime">Heure</label><input id="posterTime" type="time"></div></div>
+        <label for="posterVenue">Stade / lieu</label><input id="posterVenue" maxlength="80" placeholder="STADE, VILLE">
+        <div class="poster-two"><div><label for="posterHomeLogo">Logo équipe 1</label><input id="posterHomeLogo" type="file" accept="image/*"></div><div><label for="posterAwayLogo">Logo équipe 2</label><input id="posterAwayLogo" type="file" accept="image/*"></div></div>
+        <label for="posterBackground">Photo de fond (facultatif)</label><input id="posterBackground" type="file" accept="image/*">
+        <div class="poster-two"><div><label for="posterAccent">Couleur principale</label><input id="posterAccent" type="color" value="#00c853"></div><div><label for="posterStyle">Style</label><select id="posterStyle"><option value="broadcast">📺 TV PRIME</option><option value="stadium">🏟️ STADE</option><option value="night">🌃 NIGHT MATCH</option><option value="classic">⚽ CLASSIQUE</option><option value="derby">🔥 DERBY</option></select></div></div>
+        <div class="button-row"><button id="previewPoster" type="button">👁️ APERÇU</button><button id="publishPoster" type="button">📺 PUBLIER SUR LES ÉCRANS</button><button id="stopPoster" type="button">🗑️ RETIRER DES ÉCRANS</button><button id="downloadPoster" type="button">⬇️ TÉLÉCHARGER L’AFFICHE</button></div>
+        <p id="posterStatus" class="publish-status" aria-live="polite"></p>
+      </div>
+      <div class="poster-preview-wrap"><strong>Aperçu de l’affiche</strong><canvas id="posterCanvas" width="1080" height="1350" aria-label="Aperçu affiche de match"></canvas></div>
+    </div>
+  </div>
+</dialog>
+
+<script src="https://embed.twitch.tv/embed/v1.js"></script>
+<script src="app.js"></script>
+</body>
+</html>
