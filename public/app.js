@@ -32,7 +32,7 @@ const fixScore = el('fixScore');
 const scorePanel = el('score');
 const liveStage = el('live-stage');
 const adOverlay = el('adOverlay'), adImageView = el('adImageView'), adVideoView = el('adVideoView'), adTitleView = el('adTitleView'), adTextView = el('adTextView');
-const adImageIn = el('adImageIn'), adVideoIn = el('adVideoIn'), adTitleIn = el('adTitleIn'), adTextIn = el('adTextIn'), adTextColorIn = el('adTextColorIn'), adBgColorIn = el('adBgColorIn'), adDurationIn = el('adDurationIn'), publishStatus = el('publishStatus');
+const adImageIn = el('adImageIn'), adVideoIn = el('adVideoIn'), adVideoSoundIn = el('adVideoSoundIn'), adTitleIn = el('adTitleIn'), adTextIn = el('adTextIn'), adTextColorIn = el('adTextColorIn'), adBgColorIn = el('adBgColorIn'), adDurationIn = el('adDurationIn'), publishStatus = el('publishStatus');
 const adPreview = el('adPreview'), adPreviewImage = el('adPreviewImage'), adPreviewTitle = el('adPreviewTitle'), adPreviewText = el('adPreviewText');
 const previewAd = el('previewAd'), publishAd = el('publishAd'), stopAd = el('stopAd');
 const subOverlay = el('subOverlay'), subOutPhotoView = el('subOutPhotoView'), subOutNameView = el('subOutNameView'), subOutNumberView = el('subOutNumberView'), subOutTeamView = el('subOutTeamView'), subInPhotoView = el('subInPhotoView'), subInNameView = el('subInNameView'), subInNumberView = el('subInNumberView'), subInTeamView = el('subInTeamView');
@@ -784,11 +784,12 @@ function renderBroadcastOverlays() {
       adVideoView.src = state.adVideo;
       adVideoView.load();
     }
-
-    if (hasVideo) {
-      const p = adVideoView.play();
-      if (p) p.catch(() => {});
-    }
+if (hasVideo) {
+  adVideoView.muted = state.adVideoMuted === true;
+  const p = adVideoView.play();
+  if (p) p.catch(() => {});
+}
+  
 
     adTitleView.textContent = state.adTitle || '';
     adTextView.textContent = state.adText || '';
@@ -1058,7 +1059,9 @@ publishAd.addEventListener('click', async () => {
     if (adVideoIn.files && adVideoIn.files[0]) {
       state.adVideo = await readVideo(adVideoIn.files[0]);
       state.adImage = '';
-      const videoDuration = await new Promise((resolve, reject) => { const v=document.createElement('video'); const u=URL.createObjectURL(adVideoIn.files[0]); v.onloadedmetadata=()=>{URL.revokeObjectURL(u); resolve(v.duration);}; v.onerror=()=>reject(new Error('Vidéo invalide')); v.src=u; }); state.adVideoDuration = Math.max(1, Math.ceil(videoDuration)); state.adDuration = state.adVideoDuration;
+      const videoDuration = await new Promise((resolve, reject) => { const v=document.createElement('video'); const u=URL.createObjectURL(adVideoIn.files[0]); v.onloadedmetadata=()=>{URL.revokeObjectURL(u); resolve(v.duration);}; v.onerror=()=>reject(new Error('Vidéo invalide')); v.src=u; }); state.adVideoDuration = Math.max(1, Math.ceil(videoDuration));
+state.adDuration = state.adVideoDuration;
+state.adVideoMuted = adVideoSoundIn.value === 'muted';
     } else {
       state.adImage = await selectedImage(adImageIn, state.adImage);
       state.adVideo = '';
