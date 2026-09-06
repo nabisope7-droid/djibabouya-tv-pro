@@ -776,15 +776,49 @@ function renderBroadcastOverlays() {
     adOverlay.style.setProperty('--ad-bg', state.adBgColor || '#1a1a1a');
   } else if (adVideoView) { adVideoView.pause(); }
   const replayActive = activeReplay();
-  replayOverlay.hidden = !replayActive;
-  if (replayActive && state.replayVideo) {
-    if (replayVideoView.src !== state.replayVideo) { replayVideoView.src = state.replayVideo; replayVideoView.load(); }
-    replayVideoView.playbackRate = Math.max(.25, Math.min(1, Number(state.replaySpeed) || .5));
-    const start = Math.max(0, Number(state.replayClipStart) || 0), end = Math.max(start + .1, Number(state.replayClipEnd) || 0);
-    if (Math.abs(replayVideoView.currentTime - start) > 1 && replayVideoView.readyState >= 1) replayVideoView.currentTime = start;
-    const p = replayVideoView.play(); if (p) p.catch(() => {});
-    replayVideoView.ontimeupdate = () => { if (replayVideoView.currentTime >= end) replayVideoView.currentTime = start; };
-  } else if (replayVideoView) { replayVideoView.pause(); }
+replayOverlay.hidden = !replayActive;
+
+if (replayActive && state.replayVideo) {
+  const publicationId = String(state.replayPublicationId || '');
+
+  // Recharge le replay lorsqu'une nouvelle publication arrive.
+  if (
+    replayVideoView.dataset.publicationId !== publicationId ||
+    replayVideoView.src !== state.replayVideo
+  ) {
+    replayVideoView.dataset.publicationId = publicationId;
+    replayVideoView.src = state.replayVideo;
+    replayVideoView.load();
+  }
+
+  replayVideoView.muted = true;
+  replayVideoView.playsInline = true;
+  replayVideoView.playbackRate =
+    Math.max(.25, Math.min(1, Number(state.replaySpeed) || .5));
+
+  const start = Math.max(0, Number(state.replayClipStart) || 0);
+  const end = Math.max(start + .1, Number(state.replayClipEnd) || 0);
+
+  if (
+    Math.abs(replayVideoView.currentTime - start) > 1 &&
+    replayVideoView.readyState >= 1
+  ) {
+    replayVideoView.currentTime = start;
+  }
+
+  const playPromise = replayVideoView.play();
+  if (playPromise) {
+    playPromise.catch(() => {});
+  }
+
+  replayVideoView.ontimeupdate = () => {
+    if (replayVideoView.currentTime >= end) {
+      replayVideoView.currentTime = start;
+    }
+  };
+} else if (replayVideoView) {
+  replayVideoView.pause();
+}
   const subActive = activeFor(state.subStartedAt, state.subDuration);
   subOverlay.hidden = !subActive;
   if (subActive) {
