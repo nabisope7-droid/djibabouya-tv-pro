@@ -264,7 +264,8 @@ export default {
         }
         return json({ok:false,error:"Action inconnue"},400,corsHeaders());
       }
-      if(url.pathname==="/api/media")return handleMedia(request,env);
+      if(url.pathname==="/api/media")return handleMedia(request,env);  
+      if(url.pathname==="/api/media/delete")return handleMediaDelete(request,env);
       if(url.pathname==="/api/storage")return handleStorage(request,env);
       if(url.pathname.startsWith("/media/")&&request.method==="GET"){
         const key=decodeURIComponent(url.pathname.slice("/media/".length)); return handleMediaGet(request,env,key);
