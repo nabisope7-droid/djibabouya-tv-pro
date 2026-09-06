@@ -168,34 +168,143 @@ function parseRangeHeader(header,size){
   }
   return {start,end};
 }
-
 async function readMediaBytes(env,file){
-  const rows=await env.DB.prepare("SELECT chunk_index,data FROM media_chunks WHERE media_id=? ORDER BY chunk_index ASC").bind(file.id).all();
+  const rows=await env.DB.prepare(
+    "SELECT chunk_index,data FROM media_chunks WHERE media_id=? ORDER BY chunk_index ASC"
+  ).bind(file.id).all();
+
   const out=new Uint8Array(file.size);
   let offset=0;
+
   for(const row of (rows.results||[])){
     const data=row.data;
     const chunk=data instanceof Uint8Array?data:new Uint8Array(data||[]);
-    out.set(chunk,offset); offset+=chunk.byteLength;
+    out.set(chunk,offset);
+    offset+=chunk.byteLength;
   }
+
   if(offset!==file.size)throw new Error("Média incomplet");
   return out;
 }
 
-async function handleMediaGet(request,env,key){
-  if(request.method!=="GET"&&request.method!=="HEAD")return new Response("Méthode non autorisée",{status:405});
-  const file=await env.DB.prepare("SELECT id,key,mime,size FROM media_files WHERE key=? LIMIT 1").bind(key).first();
-  if(!file)return new Response("Média introuvable",{status:404,headers:{"content-type":"text/plain"}});
-  let bytes; try{bytes=await readMediaBytes(env,file)}catch{return new Response("Média illisible",{status:500})}
-  const range=parseRangeHeader(request.headers.get("range"),file.size);
-  const common={"content-type":file.mime,"cache-control":"public, max-age=31536000, immutable","accept-ranges":"bytes","etag":`W/\"${file.id}-${file.size}\"`};
-  if(request.method==="HEAD")return new Response(null,{status:200,headers:{...common,"content-length":String(file.size)}});
-  if(range==="invalid")return new Response(null,{status:416,headers:{...common,"content-range":`bytes */${file.size}`}});
-  if(range){
-    const part=bytes.slice(range.start,range.end+1);
-    return new Response(part,{status:206,headers:{...common,"content-range":`bytes ${range.start}-${range.end}/${file.size}`,"content-length":String(part.byteLength)}});
+async function readMediaRange(env,file,start,end){
+  const firstChunk=Math.floor(start/MEDIA_CHUNK_BYTES);
+  const lastChunk=Math.floor(end/MEDIA_CHUNK_BYTES);
+
+  const rows=await env.DB.prepare(
+    "SELECT chunk_index,data FROM media_chunks WHERE media_id=? AND chunk_index BETWEEN ? AND ? ORDER BY chunk_index ASC"
+  ).bind(file.id,firstChunk,lastChunk).all();
+
+  const out=new Uint8Array(end-start+1);
+
+  for(const row of (rows.results||[])){
+    const data=row.data;
+    const chunk=data instanceof Uint8Array?data:new Uint8Array(data||[]);
+
+    const chunkStart=Number(row.chunk_index)*MEDIA_CHUNK_BYTES;
+    const chunkEnd=chunkStart+chunk.byteLength-1;
+
+    const from=Math.max(start,chunkStart);
+    const to=Math.min(end,chunkEnd);
+
+    if(to<from)continue;
+
+    const part=chunk.slice(
+      from-chunkStart,
+      to-chunkStart+1
+    );
+
+    out.set(part,from-start);
   }
-  return new Response(bytes,{status:200,headers:{...common,"content-length":String(file.size)}});
+
+  return out;
+}
+
+async function handleMediaGet(request,env,key){
+  if(request.method!=="GET"&&request.method!=="HEAD"){
+    return new Response("Méthode non autorisée",{status:405});
+  }
+
+  const file=await env.DB.prepare(
+    "SELECT id,key,mime,size FROM media_files WHERE key=? LIMIT 1"
+  ).bind(key).first();
+
+  if(!file){
+    return new Response("Média introuvable",{
+      status:404,
+      headers:{"content-type":"text/plain"}
+    });
+  }
+
+  const common={
+    "content-type":file.mime,
+    "cache-control":"public, max-age=31536000, immutable",
+    "accept-ranges":"bytes",
+    "etag":`W/"${file.id}-${file.size}"`,
+    "x-content-type-options":"nosniff"
+  };
+
+  if(request.method==="HEAD"){
+    return new Response(null,{
+      status:200,
+      headers:{
+        ...common,
+        "content-length":String(file.size)
+      }
+    });
+  }
+
+  const range=parseRangeHeader(
+    request.headers.get("range"),
+    file.size
+  );
+
+  if(range==="invalid"){
+    return new Response(null,{
+      status:416,
+      headers:{
+        ...common,
+        "content-range":`bytes */${file.size}`
+      }
+    });
+  }
+
+  try{
+    if(range){
+      const part=await readMediaRange(
+        env,
+        file,
+        range.start,
+        range.end
+      );
+
+      return new Response(part,{
+        status:206,
+        headers:{
+          ...common,
+          "content-range":`bytes ${range.start}-${range.end}/${file.size}`,
+          "content-length":String(part.byteLength)
+        }
+      });
+    }
+
+    const bytes=await readMediaBytes(env,file);
+
+    return new Response(bytes,{
+      status:200,
+      headers:{
+        ...common,
+        "content-length":String(file.size)
+      }
+    });
+  }catch(err){
+    return new Response("Média illisible",{
+      status:500,
+      headers:common
+    });
+  }
+}
+
 }async function handleMediaDelete(request, env) {
   if (request.method !== "POST") {
     return json({ error: "Méthode non autorisée" }, 405);
@@ -267,7 +376,7 @@ export default {
       if(url.pathname==="/api/media")return handleMedia(request,env);  
       if(url.pathname==="/api/media/delete")return handleMediaDelete(request,env);
       if(url.pathname==="/api/storage")return handleStorage(request,env);
-      if(url.pathname.startsWith("/media/")&&request.method==="GET"){
+      if(url.pathname.startsWith("/media/")&&(request.method==="GET"||request.method==="HEAD")){
         const key=decodeURIComponent(url.pathname.slice("/media/".length)); return handleMediaGet(request,env,key);
       }
       return env.ASSETS.fetch(request);
