@@ -196,6 +196,49 @@ async function handleMediaGet(request,env,key){
     return new Response(part,{status:206,headers:{...common,"content-range":`bytes ${range.start}-${range.end}/${file.size}`,"content-length":String(part.byteLength)}});
   }
   return new Response(bytes,{status:200,headers:{...common,"content-length":String(file.size)}});
+}async function handleMediaDelete(request, env) {
+  if (request.method !== "POST") {
+    return json({ error: "Méthode non autorisée" }, 405);
+  }
+
+  let body;
+  try {
+    body = await request.json();
+  } catch {
+    return json({ error: "JSON invalide" }, 400);
+  }
+
+  if (!(await validToken(env, body.token))) {
+    return json({ error: "Session admin expirée ou invalide" }, 401);
+  }
+
+  const key = String(body.key || "").trim();
+  if (!key) {
+    return json({ error: "Média invalide" }, 400);
+  }
+
+  const file = await env.DB
+    .prepare("SELECT id FROM media_files WHERE key=? LIMIT 1")
+    .bind(key)
+    .first();
+
+  if (!file) {
+    return json({ error: "Média introuvable" }, 404);
+  }
+
+  try {
+    await env.DB.batch([
+      env.DB.prepare("DELETE FROM media_chunks WHERE media_id=?").bind(file.id),
+      env.DB.prepare("DELETE FROM media_files WHERE id=?").bind(file.id)
+    ]);
+
+    return json({ ok: true }, 200);
+  } catch (err) {
+    return json({
+      error: "Impossible de supprimer le média",
+      detail: String(err?.message || err)
+    }, 500);
+  }
 }
 export default {
   async fetch(request,env){
