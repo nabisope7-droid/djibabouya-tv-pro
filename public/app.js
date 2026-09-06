@@ -1140,19 +1140,78 @@ publishReplay.addEventListener('click', async () => {
   try {
     const file = getReplayFile();
     setPublishStatus(replayStatus, 'Validation et publication du replay…');
+
     const data = await validateReplayFile(file);
-    const meta = await new Promise((resolve, reject) => { const v=document.createElement('video'), u=URL.createObjectURL(file); v.onloadedmetadata=()=>{URL.revokeObjectURL(u);resolve(v.duration)};v.onerror=()=>reject(new Error('Vidéo invalide'));v.src=u; });
-    const start = Math.max(0, Math.min(meta - .1, Number(replayStart.value) || 0));
-    const end = Math.max(start + .1, Math.min(meta, Number(replayEnd.value) || meta));
-    state.replayVideo = data; state.replayClipStart = start; state.replayClipEnd = end;
-    state.replaySpeed = Math.max(.25, Math.min(1, Number(replaySpeed.value) || .5));
-    state.replayDuration = Math.max(1, Math.ceil((end - start) / state.replaySpeed));
-    state.replayPublicationId = crypto.randomUUID ? crypto.randomUUID() : String(Date.now());
-    await uploadStateMedia(['replayVideo']);
+
+    const meta = await new Promise((resolve, reject) => {
+      const v = document.createElement('video');
+      const u = URL.createObjectURL(file);
+
+      v.onloadedmetadata = () => {
+        URL.revokeObjectURL(u);
+        resolve(v.duration);
+      };
+
+      v.onerror = () => {
+        URL.revokeObjectURL(u);
+        reject(new Error('Vidéo invalide'));
+      };
+
+      v.src = u;
+    });
+
+    const start = Math.max(
+      0,
+      Math.min(meta - 0.1, Number(replayStart.value) || 0)
+    );
+
+    const end = Math.max(
+      start + 0.1,
+      Math.min(meta, Number(replayEnd.value) || meta)
+    );
+
+    const speed = Math.max(
+      0.25,
+      Math.min(1, Number(replaySpeed.value) || 0.5)
+    );
+
+    const duration = Math.max(
+      1,
+      Math.ceil((end - start) / speed)
+    );
+
+    const publicationId =
+      crypto.randomUUID
+        ? crypto.randomUUID()
+        : String(Date.now());
+
+    const uploadedUrl = await uploadMedia(data, 'replayVideo');
+
+    state.replayVideo = uploadedUrl;
+    state.replayClipStart = start;
+    state.replayClipEnd = end;
+    state.replaySpeed = speed;
+    state.replayDuration = duration;
+    state.replayPublicationId = publicationId;
     state.replayStartedAt = Date.now();
-    await saveAndSync(); render();
-    setPublishStatus(replayStatus, '✓ Replay validé et publié avec succès sur l’écran des spectateurs.');
-  } catch (err) { console.error(err); setPublishStatus(replayStatus, '✕ Publication impossible : ' + err.message, false); }
+
+    await saveAndSync();
+    render();
+
+    setPublishStatus(
+      replayStatus,
+      '✓ Replay validé et publié avec succès sur l’écran des spectateurs.'
+    );
+
+  } catch (err) {
+    console.error(err);
+
+    setPublishStatus(
+      replayStatus,
+      '✕ Publication impossible : ' + err.message,
+      false
+    );
+  }
 });
 stopReplay.addEventListener('click', () => { state.replayStartedAt = 0; state.replayVideo = ''; saveAndSync(); render(); setPublishStatus(replayStatus, 'Replay retiré.'); });
 
