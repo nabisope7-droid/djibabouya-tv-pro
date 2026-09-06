@@ -303,8 +303,6 @@ async function handleMediaGet(request,env,key){
       headers:common
     });
   }
-}
-
 }async function handleMediaDelete(request, env) {
   if (request.method !== "POST") {
     return json({ error: "Méthode non autorisée" }, 405);
