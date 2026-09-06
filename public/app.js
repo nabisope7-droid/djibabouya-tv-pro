@@ -830,7 +830,7 @@ if (replayActive && state.replayVideo) {
   replayVideoView.ontimeupdate = null;
   replayVideoView.dataset.publicationId = '';
 }
-}
+
   const subActive = activeFor(state.subStartedAt, state.subDuration);
   subOverlay.hidden = !subActive;
   if (subActive) {
