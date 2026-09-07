@@ -142,7 +142,29 @@
         <span id="scoreHeightValue">100%</span>
       </div>
     </div>
+    <!-- NOUVEAU RÉGLAGE TAILLE DU PANNEAU TV -->
+<label>TAILLE DU PANNEAU TV — PHOTOS / VIDÉOS</label>
 
+<div class="display-size-panel media-size-panel">
+
+  <div class="button-row">
+    <button id="mediaSmaller" type="button">RÉDUIRE</button>
+    <button id="mediaLarger" type="button">AGRANDIR</button>
+    <button id="mediaSizeReset" type="button">100%</button>
+  </div>
+
+  <label for="mediaSize">Taille du panneau TV</label>
+
+  <div class="score-control">
+    <input id="mediaSize" type="range" min="60" max="160" step="5" value="100">
+    <span id="mediaSizeValue">100%</span>
+  </div>
+
+  <p class="admin-help">
+    Ce réglage agrandit ou réduit les photos, vidéos et replays affichés aux spectateurs.
+  </p>
+
+</div>
     <label>Équipe A</label>
     <input id="homeIn" placeholder="Équipe A">
     <label>Couleur du nom A</label>
