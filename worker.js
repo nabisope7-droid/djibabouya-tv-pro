@@ -60,7 +60,7 @@ function cleanState(input) {
     else if(nums.has(k)){const n=Number(v);if(Number.isFinite(n))out[k]=n;}
     else if(bools.has(k)&&typeof v==="boolean")out[k]=v;
     else if(colors.has(k)&&typeof v==="string"&&/^#[0-9a-fA-F]{6}$/.test(v))out[k]=v;
-    else if(media.has(k)&&typeof v==="string"&&v.length<=2048)out[k]=v; // only URLs after media migration
+    else if(media.has(k)&&typeof v==="string"&&v.length<=4096)out[k]=v;
     else if(k==="goalEvents"&&Array.isArray(v))out[k]=v.slice(-6);
     else if(k==="compositionPlayers"&&Array.isArray(v))out[k]=v.slice(0,11);
   }
