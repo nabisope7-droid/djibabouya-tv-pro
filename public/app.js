@@ -27,6 +27,8 @@ const scoreSize = el('scoreSize'), scoreSizeValue = el('scoreSizeValue');
 const scoreSmaller = el('scoreSmaller'), scoreLarger = el('scoreLarger'), scoreSizeReset = el('scoreSizeReset');
 const scoreWidth = el('scoreWidth'), scoreWidthValue = el('scoreWidthValue');
 const scoreHeight = el('scoreHeight'), scoreHeightValue = el('scoreHeightValue');
+const mediaSize = el('mediaSize'), mediaSizeValue = el('mediaSizeValue');
+const mediaSmaller = el('mediaSmaller'), mediaLarger = el('mediaLarger'), mediaSizeReset = el('mediaSizeReset');
 const moveScore = el('moveScore');
 const fixScore = el('fixScore');
 const scorePanel = el('score');
@@ -79,6 +81,7 @@ let state = {
   scoreScale: 100,
   scoreWidth: 100,
   scoreHeight: 100,
+  mediaSize: 100,
   scoreX: 0,
   scoreY: 108,
   scoreAttached: true,
@@ -342,7 +345,8 @@ function render() {
   if (scoreWidthValue) scoreWidthValue.textContent = width + '%';
   if (scoreHeight) scoreHeight.value = height;
   if (scoreHeightValue) scoreHeightValue.textContent = height + '%';
-
+  if (mediaSize) mediaSize.value = Number(state.mediaSize) || 100;
+  if (mediaSizeValue) mediaSizeValue.textContent = (Number(state.mediaSize) || 100) + '%';
   clock.textContent = formatTime(currentSeconds());
 
   // Quand le temps additionnel est publié, le chrono repart automatiquement de 00:00.
@@ -607,7 +611,36 @@ scoreSizeReset.addEventListener('click', () => {
   state.scoreHeight = 100;
   publishDisplaySize();
 });
+function clampMediaPercent(value) {
+  return Math.max(60, Math.min(160, Number(value) || 100));
+}
 
+function publishMediaSize() {
+  saveAndSync();
+  render();
+}
+
+mediaSize.addEventListener('input', () => {
+  state.mediaSize = clampMediaPercent(mediaSize.value);
+  render();
+});
+
+mediaSize.addEventListener('change', publishMediaSize);
+
+mediaSmaller.addEventListener('click', () => {
+  state.mediaSize = clampMediaPercent((Number(state.mediaSize) || 100) - 5);
+  publishMediaSize();
+});
+
+mediaLarger.addEventListener('click', () => {
+  state.mediaSize = clampMediaPercent((Number(state.mediaSize) || 100) + 5);
+  publishMediaSize();
+});
+
+mediaSizeReset.addEventListener('click', () => {
+  state.mediaSize = 100;
+  publishMediaSize();
+});
 
 panel.addEventListener('click', e => { if (e.target === panel) closeAdminPanel(); });
 document.addEventListener('keydown', e => { if (e.key === 'Escape' && panel.open) closeAdminPanel(); });
@@ -764,6 +797,15 @@ function activeReplay() { return activeFor(state.replayStartedAt, state.replayDu
 
 function renderBroadcastOverlays() {
   clearExpiredBroadcasts();
+  const mediaScale = Math.max(0.6, Math.min(1.6, (Number(state.mediaSize) || 100) / 100));
+
+if (adOverlay) {
+  adOverlay.style.setProperty('--media-scale', mediaScale);
+}
+
+if (replayOverlay) {
+  replayOverlay.style.setProperty('--media-scale', mediaScale);
+}
 
   // =========================
   // PUBLICITÉ
