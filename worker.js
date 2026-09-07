@@ -10,7 +10,7 @@ const DEFAULT_STATE = {
   homeColor:"#ffffff", homeOutline:"#000000", homeBg:"#0964e8",
   awayColor:"#ffffff", awayOutline:"#000000", awayBg:"#f4c400",
   scoreColor:"#111111", scoreBg:"#ffffff", clockColor:"#ffffff", extraColor:"#ffffff",
-  scoreVisible:true, scoreScale:100, scoreWidth:100, scoreHeight:100, scoreX:0, scoreY:12, scoreAttached:true,
+  scoreVisible:true, scoreScale:100, scoreWidth:100, scoreHeight:100, mediaSize:100, scoreX:0, scoreY:12, scoreAttached:true,
   adImage:"", adVideo:"", adVideoDuration:0, adPublicationId:"",
   replayVideo:"", replayStartedAt:0, replayDuration:0, replayClipStart:0, replayClipEnd:0, replaySpeed:0.5, replayPublicationId:"",
   adTitle:"", adText:"", adTextColor:"#ffffff", adBgColor:"#1a1a1a", adStartedAt:0, adDuration:0,
@@ -49,7 +49,7 @@ function cleanState(input) {
   const out={...DEFAULT_STATE};
   if (!input || typeof input!=="object") return out;
   const text=new Set(["home","away","status","message","adTitle","adText","adPublicationId","replayPublicationId","posterPublicationId","subOutName","subOutNumber","subOutTeam","subInName","subInNumber","subInTeam","compositionFormation","compositionTeam","compositionPublicationId"]);
-  const nums=new Set(["sh","sa","extra","elapsed","startedAt","extraElapsed","extraStartedAt","scoreScale","scoreWidth","scoreHeight","scoreX","scoreY","adStartedAt","adDuration","posterStartedAt","subStartedAt","subDuration","adVideoDuration","replayStartedAt","replayDuration","replayClipStart","replayClipEnd","replaySpeed","goalReminderDuration"]);
+  const nums=new Set(["sh","sa","extra","elapsed","startedAt","extraElapsed","extraStartedAt","scoreScale","scoreWidth","scoreHeight","mediaSize","scoreX","scoreY","adStartedAt","adDuration","posterStartedAt","subStartedAt","subDuration","adVideoDuration","replayStartedAt","replayDuration","replayClipStart","replayClipEnd","replaySpeed","goalReminderDuration"]);
   const bools=new Set(["running","extraMode","scoreVisible","scoreAttached","goalReminderVisible","compositionVisible"]);
   const colors=new Set(["homeColor","homeOutline","homeBg","awayColor","awayOutline","awayBg","scoreColor","scoreBg","clockColor","extraColor","adTextColor","adBgColor"]);
   const media=new Set(["adImage","adVideo","replayVideo","posterImage","subOutPhoto","subInPhoto"]);
@@ -69,6 +69,7 @@ function cleanState(input) {
   out.scoreScale=Math.max(50,Math.min(150,Number(out.scoreScale)||100));
   out.scoreWidth=Math.max(50,Math.min(150,Number(out.scoreWidth)||100));
   out.scoreHeight=Math.max(50,Math.min(150,Number(out.scoreHeight)||100));
+  out.mediaSize=Math.max(60,Math.min(160,Number(out.mediaSize)||100));
   out.scoreX=Math.max(0,Number(out.scoreX)||0); out.scoreY=Math.max(0,Number(out.scoreY)||12);
   out.adDuration=Math.max(0,Math.min(180,Math.floor(Number(out.adDuration)||0)));
   out.subDuration=Math.max(0,Math.min(30,Math.floor(Number(out.subDuration)||0)));
